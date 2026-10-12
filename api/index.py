@@ -6,7 +6,6 @@ import pandas as pd
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 
 
 # --------------------------------------------------
@@ -16,7 +15,9 @@ from fastapi.staticfiles import StaticFiles
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_PATH = BASE_DIR / "data" / "netflix_titles.csv"
 PUBLIC_DIR = BASE_DIR / "public"
+
 HTML_PATH = PUBLIC_DIR / "index.html"
+DASHBOARD_PATH = PUBLIC_DIR / "dashboard.html"
 
 
 # --------------------------------------------------
@@ -49,11 +50,18 @@ def load_dataset():
         )
 
     df = pd.read_csv(DATA_PATH)
-
-    # Clean column names
     df.columns = df.columns.str.strip()
 
-    # Clean text columns
+    required_columns = [
+        "show_id", "type", "title", "director",
+        "country", "date_added", "release_year",
+        "rating", "duration", "listed_in", "description"
+    ]
+
+    missing = [c for c in required_columns if c not in df.columns]
+    if missing:
+        raise ValueError(f"Missing CSV columns: {missing}")
+
     for col in df.select_dtypes(include=["object"]).columns:
         df[col] = df[col].map(
             lambda value: value.strip()
@@ -61,18 +69,13 @@ def load_dataset():
             else value
         )
 
-    # Convert release year to numeric
     df["release_year"] = pd.to_numeric(
         df["release_year"], errors="coerce"
     )
 
-    # Convert date_added to datetime
     df["date_added"] = pd.to_datetime(
         df["date_added"], errors="coerce"
     )
-
-    # Replace pandas NaN/NaT with JSON-compatible None
-    df = df.astype(object).where(pd.notna(df), None)
 
     return df
 
@@ -87,34 +90,12 @@ def get_dataset():
         )
 
 
-# --------------------------------------------------
-# FILTER DATA
-# --------------------------------------------------
-
-def filter_dataset(
-    df,
-    content_type: Optional[str] = None,
-    release_year: Optional[int] = None,
-    search: Optional[str] = None,
-):
-    if content_type:
-        df = df[df["type"] == content_type]
-
-    if release_year:
-        df = df[df["release_year"] == release_year]
-
-    if search:
-        df = df[
-            df["title"]
-            .fillna("")
-            .str.contains(search, case=False, regex=False)
-        ]
-
-    return df
+def json_safe(df):
+    return df.astype(object).where(pd.notna(df), None)
 
 
 # --------------------------------------------------
-# FRONTEND DASHBOARD
+# SERVE HOME PAGE
 # --------------------------------------------------
 
 @app.get("/", include_in_schema=False)
@@ -122,11 +103,26 @@ def home():
     if not HTML_PATH.exists():
         raise HTTPException(
             status_code=404,
-            detail=f"Dashboard HTML not found: {HTML_PATH}",
+            detail=f"Home page not found: {HTML_PATH}",
+        )
+
+    return FileResponse(str(HTML_PATH), media_type="text/html")
+
+
+# --------------------------------------------------
+# SERVE DASHBOARD PAGE
+# --------------------------------------------------
+
+@app.get("/dashboard.html", include_in_schema=False)
+def dashboard():
+    if not DASHBOARD_PATH.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Dashboard HTML not found: {DASHBOARD_PATH}",
         )
 
     return FileResponse(
-        str(HTML_PATH),
+        str(DASHBOARD_PATH),
         media_type="text/html",
     )
 
@@ -141,7 +137,7 @@ def health():
 
     return {
         "status": "ok",
-        "rows": len(df),
+        "rows": int(len(df)),
         "csv_exists": DATA_PATH.exists(),
     }
 
@@ -155,25 +151,18 @@ def filters():
     df = get_dataset()
 
     years = sorted(
-        [
-            int(year)
-            for year in df["release_year"].dropna().unique()
-        ],
+        [int(y) for y in df["release_year"].dropna().unique()],
         reverse=True,
     )
 
-    types = sorted(
-        df["type"].dropna().unique().tolist()
-    )
+    types = sorted(df["type"].dropna().unique().tolist())
 
-    countries = sorted(
-        {
-            country.strip()
-            for value in df["country"].dropna()
-            for country in str(value).split(",")
-            if country.strip()
-        }
-    )
+    countries = sorted({
+        country.strip()
+        for value in df["country"].dropna()
+        for country in str(value).split(",")
+        if country.strip()
+    })
 
     return {
         "types": types,
@@ -190,9 +179,6 @@ def filters():
 def summary():
     df = get_dataset()
 
-    movie_count = int((df["type"] == "Movie").sum())
-    show_count = int((df["type"] == "TV Show").sum())
-
     countries = {
         country.strip()
         for value in df["country"].dropna()
@@ -200,21 +186,15 @@ def summary():
         if country.strip()
     }
 
+    years = df["release_year"].dropna()
+
     return {
         "total_titles": int(len(df)),
-        "total_movies": movie_count,
-        "total_tv_shows": show_count,
+        "total_movies": int((df["type"] == "Movie").sum()),
+        "total_tv_shows": int((df["type"] == "TV Show").sum()),
         "total_countries": len(countries),
-        "first_release_year": (
-            int(df["release_year"].min())
-            if df["release_year"].notna().any()
-            else None
-        ),
-        "last_release_year": (
-            int(df["release_year"].max())
-            if df["release_year"].notna().any()
-            else None
-        ),
+        "first_release_year": int(years.min()) if not years.empty else None,
+        "last_release_year": int(years.max()) if not years.empty else None,
     }
 
 
@@ -226,22 +206,14 @@ def summary():
 def charts():
     df = get_dataset()
 
-    # Movie vs TV Show
-    type_counts = (
-        df["type"].value_counts().to_dict()
-    )
+    type_counts = df["type"].value_counts().to_dict()
 
-    # Top genres
     genre_counts = {}
-
     for value in df["listed_in"].dropna():
         for genre in str(value).split(","):
             genre = genre.strip()
-
             if genre:
-                genre_counts[genre] = (
-                    genre_counts.get(genre, 0) + 1
-                )
+                genre_counts[genre] = genre_counts.get(genre, 0) + 1
 
     top_genres = sorted(
         genre_counts.items(),
@@ -249,13 +221,8 @@ def charts():
         reverse=True,
     )[:10]
 
-    # Titles by release year
     year_counts = (
-        df["release_year"]
-        .dropna()
-        .astype(int)
-        .value_counts()
-        .sort_index()
+        df["release_year"].dropna().astype(int).value_counts().sort_index()
     )
 
     return {
@@ -264,7 +231,7 @@ def charts():
             for key, value in type_counts.items()
         },
         "top_genres": [
-            {"genre": genre, "count": count}
+            {"genre": genre, "count": int(count)}
             for genre, count in top_genres
         ],
         "release_years": [
@@ -278,6 +245,28 @@ def charts():
 # TITLES TABLE + SEARCH + FILTERS
 # --------------------------------------------------
 
+def filter_dataset(
+    df,
+    content_type: Optional[str] = None,
+    release_year: Optional[int] = None,
+    search: Optional[str] = None,
+):
+    if content_type:
+        df = df[df["type"] == content_type]
+
+    if release_year is not None:
+        df = df[df["release_year"] == release_year]
+
+    if search:
+        df = df[
+            df["title"].fillna("").str.contains(
+                search, case=False, regex=False
+            )
+        ]
+
+    return df
+
+
 @app.get("/titles")
 def titles(
     limit: int = Query(default=100, ge=1, le=10000),
@@ -288,10 +277,7 @@ def titles(
 ):
     df = get_dataset()
 
-    if content_type and content_type not in [
-        "Movie",
-        "TV Show",
-    ]:
+    if content_type and content_type not in ["Movie", "TV Show"]:
         raise HTTPException(
             status_code=400,
             detail="content_type must be Movie or TV Show",
@@ -306,34 +292,26 @@ def titles(
 
     total = len(df)
 
-    # Select table columns
     columns = [
-        "show_id",
-        "type",
-        "title",
-        "director",
-        "country",
-        "date_added",
-        "release_year",
-        "rating",
-        "duration",
-        "listed_in",
-        "description",
+        "show_id", "type", "title", "director", "country",
+        "date_added", "release_year", "rating", "duration",
+        "listed_in", "description",
     ]
 
-    df = df[columns].iloc[offset:offset + limit]
+    df = df[columns].iloc[offset:offset + limit].copy()
 
-    # Convert dates to strings for JSON
-    df["date_added"] = df["date_added"].map(
-        lambda value: (
-            value.strftime("%B %d, %Y")
-            if pd.notna(value)
-            else None
-        )
+    df["date_added"] = pd.to_datetime(
+        df["date_added"], errors="coerce"
+    ).map(
+        lambda value: value.strftime("%B %d, %Y")
+        if pd.notna(value) else None
     )
 
-    # Convert NaN/NaT to None
-    df = df.astype(object).where(pd.notna(df), None)
+    df["release_year"] = pd.to_numeric(
+        df["release_year"], errors="coerce"
+    )
+
+    df = json_safe(df)
 
     return {
         "total": int(total),
@@ -341,10 +319,3 @@ def titles(
         "offset": offset,
         "items": df.to_dict(orient="records"),
     }
-
-
-# --------------------------------------------------
-# RUN LOCALLY
-# --------------------------------------------------
-# Start using:
-# python -m uvicorn api.index:app --reload

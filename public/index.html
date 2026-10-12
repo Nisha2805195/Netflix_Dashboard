@@ -1,329 +1,338 @@
-```html
-<!DOCTYPE html>
+ <!DOCTYPE html>
+
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Netflix Analytics Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>Netflix Analytics | Home</title>
   <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #141414;
-      color: #fff;
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #718096;
+      --accent: #e50914;
+      --border: #e7ebf2;
     }
-    header {
-      padding: 22px 5%;
-      background: #0b0b0b;
-      border-bottom: 2px solid #e50914;
-    }
-    header h1 { margin: 0; color: #e50914; }
-    header p { color: #bbb; margin-bottom: 0; }
-    main { max-width: 1250px; margin: auto; padding: 25px; }
-    .filters, .cards, .charts {
-      display: grid;
-      gap: 18px;
-      margin-bottom: 22px;
-    }
-    .filters { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
-    .cards { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
-    .charts { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-    .panel, .card {
-      background: #222;
-      padding: 20px;
-      border-radius: 10px;
-      border: 1px solid #333;
-    }
-    .card h3 { color: #bbb; font-size: 14px; margin-top: 0; }
-    .card strong { font-size: 30px; color: #e50914; }
-    select, input {
-      width: 100%;
-      padding: 12px;
-      border-radius: 6px;
-      border: 1px solid #555;
-      background: #181818;
-      color: white;
-    }
-    label { display: block; margin-bottom: 8px; color: #ddd; }
-    h2 { font-size: 19px; }
-    .chart-wrap { height: 300px; position: relative; }
-    .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; min-width: 600px; }
-    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #444; }
-    th { color: #e50914; }
-    tr:hover { background: #303030; }
-    button {
-      background: #e50914; color: white; border: 0;
-      padding: 12px; border-radius: 6px; cursor: pointer;
-    }
-    .status { color: #bbb; margin: 12px 0; }
-    footer { text-align: center; padding: 25px; color: #888; }
+
+```
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+nav {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 7%;
+  background: white;
+  border-bottom: 1px solid var(--border);
+}
+
+.logo {
+  color: var(--accent);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+nav a {
+  color: var(--text);
+  text-decoration: none;
+  margin-left: 24px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+nav a:hover { color: var(--accent); }
+
+main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+.hero {
+  background: linear-gradient(120deg, #171c2e, #303b59);
+  color: white;
+  padding: 48px;
+  border-radius: 20px;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 30px;
+  align-items: center;
+}
+
+.eyebrow {
+  color: #ff7c84;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+h1 {
+  font-size: clamp(30px, 4vw, 46px);
+  line-height: 1.12;
+  margin: 16px 0;
+}
+
+.hero p {
+  color: #d4dbea;
+  line-height: 1.7;
+  max-width: 570px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 26px;
+}
+
+.btn {
+  display: inline-block;
+  padding: 13px 19px;
+  border-radius: 9px;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.primary { background: var(--accent); color: white; }
+.secondary { border: 1px solid #69748e; color: white; }
+
+.hero-art {
+  min-height: 220px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  align-items: center;
+  transform: rotate(-3deg);
+}
+
+.poster {
+  height: 170px;
+  border-radius: 12px;
+  display: flex;
+  align-items: end;
+  padding: 12px;
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 12px 28px #0004;
+}
+
+.poster:nth-child(1) {
+  background: linear-gradient(160deg, #d74b52, #431d39);
+  margin-top: 30px;
+}
+
+.poster:nth-child(2) {
+  background: linear-gradient(160deg, #477a9e, #17233f);
+  height: 205px;
+}
+
+.poster:nth-child(3) {
+  background: linear-gradient(160deg, #d5a14b, #71353a);
+  margin-top: 45px;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+  margin: 36px 0 18px;
+}
+
+h2 { margin: 0 0 7px; font-size: 23px; }
+.muted { color: var(--muted); font-size: 14px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px;
+}
+
+.card-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: #fff0f1;
+  color: var(--accent);
+  font-size: 21px;
+  margin-bottom: 18px;
+}
+
+.card h3 { margin: 0 0 9px; font-size: 17px; }
+.card p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+.feature-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.feature {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.feature strong { display: block; margin-bottom: 8px; }
+.feature span { color: var(--muted); font-size: 13px; line-height: 1.6; }
+
+.cta {
+  margin-top: 32px;
+  padding: 28px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+footer {
+  text-align: center;
+  padding: 28px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+@media (max-width: 760px) {
+  nav { padding: 0 5%; }
+  nav a { margin-left: 12px; font-size: 12px; }
+  .hero { grid-template-columns: 1fr; padding: 28px; }
+  .hero-art { max-width: 360px; width: 100%; }
+  .grid, .feature-row { grid-template-columns: 1fr; }
+  .cta { align-items: start; flex-direction: column; }
+  main { padding: 28px 16px; }
+}
+```
+
   </style>
 </head>
 <body>
-<header>
-  <h1>NETFLIX</h1>
-  <p>Movies & TV Shows Analytics Dashboard</p>
-</header>
 
-<main>
-  <section class="filters">
-    <div class="panel">
-      <label for="type">Content Type</label>
-      <select id="type">
-        <option value="">All</option>
-        <option value="Movie">Movies</option>
-        <option value="TV Show">TV Shows</option>
-      </select>
+  <nav>
+    <div class="logo">NETFLIX ANALYTICS</div>
+    <div>
+      <a href="./index.html">Home</a>
+      <a href="./dashboard.html">Dashboard</a>
+      <a href="#about">About</a>
     </div>
-    <div class="panel">
-      <label for="year">Release Year</label>
-      <select id="year"><option value="">All years</option></select>
+  </nav>
+
+  <main>
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Data Analytics Project</div>
+        <h1>Explore Netflix Content Through Data.</h1>
+        <p>
+          Discover insights from the Netflix titles dataset.
+          Explore content categories, release trends, genres and
+          country-level patterns through data visualization.
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="./dashboard.html">Open Dashboard →</a>
+          <a class="btn secondary" href="#features">Explore Features</a>
+        </div>
+      </div>
+
+```
+  <div class="hero-art" aria-label="Decorative analytics cards">
+    <div class="poster">MOVIES</div>
+    <div class="poster">DATA<br>INSIGHTS</div>
+    <div class="poster">TV SHOWS</div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <div>
+      <h2>Project Overview</h2>
+      <div class="muted">A clear starting point for exploring the dataset.</div>
     </div>
-    <div class="panel">
-      <label for="search">Search title</label>
-      <input id="search" placeholder="Enter a title...">
+  </div>
+
+  <div class="grid">
+    <article class="card">
+      <div class="card-icon">▦</div>
+      <h3>Content Analysis</h3>
+      <p>Explore the distribution of movies and TV shows in the dataset.</p>
+    </article>
+
+    <article class="card">
+      <div class="card-icon">↗</div>
+      <h3>Release Trends</h3>
+      <p>Investigate how content releases vary across different years.</p>
+    </article>
+
+    <article class="card">
+      <div class="card-icon">◎</div>
+      <h3>Genre & Country Insights</h3>
+      <p>Examine genres and country information to discover patterns.</p>
+    </article>
+  </div>
+</section>
+
+<section id="features">
+  <div class="section-head">
+    <div>
+      <h2>What You Can Explore</h2>
+      <div class="muted">Designed for an interactive analytics workflow.</div>
     </div>
-    <div class="panel">
-      <label>&nbsp;</label>
-      <button id="reset">Reset Filters</button>
+  </div>
+
+  <div class="feature-row">
+    <div class="feature">
+      <strong>01 · Dataset Exploration</strong>
+      <span>Review the available content fields and categories.</span>
     </div>
-  </section>
-
-  <section class="cards">
-    <div class="card"><h3>Filtered Titles</h3><strong id="total">—</strong></div>
-    <div class="card"><h3>Movies</h3><strong id="movies">—</strong></div>
-    <div class="card"><h3>TV Shows</h3><strong id="shows">—</strong></div>
-    <div class="card"><h3>Countries</h3><strong id="countries">—</strong></div>
-  </section>
-
-  <p class="status" id="status">Connecting to API...</p>
-
-  <section class="charts">
-    <div class="panel">
-      <h2>Movies vs TV Shows</h2>
-      <div class="chart-wrap"><canvas id="typeChart"></canvas></div>
+    <div class="feature">
+      <strong>02 · Visual Analytics</strong>
+      <span>Use charts available in the existing dashboard to examine trends.</span>
     </div>
-    <div class="panel">
-      <h2>Top Genres</h2>
-      <div class="chart-wrap"><canvas id="genreChart"></canvas></div>
+    <div class="feature">
+      <strong>03 · Data-driven Insights</strong>
+      <span>Draw conclusions from the actual dataset instead of assumed statistics.</span>
     </div>
-    <div class="panel">
-      <h2>Titles by Release Year</h2>
-      <div class="chart-wrap"><canvas id="yearChart"></canvas></div>
-    </div>
-  </section>
+  </div>
+</section>
 
-  <section class="panel">
-    <h2>Netflix Titles</h2>
-    <p id="tableInfo" class="status"></p>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Title</th><th>Type</th><th>Release Year</th><th>Rating</th><th>Duration</th><th>Country</th></tr></thead>
-        <tbody id="rows"></tbody>
-      </table>
-    </div>
-    <div style="margin-top:18px;display:flex;gap:12px;align-items:center">
-      <button id="prev">Previous</button>
-      <span id="pageInfo">Page 1</span>
-      <button id="next">Next</button>
-    </div>
-  </section>
-</main>
-<footer>Netflix Titles Dataset · Analytics Dashboard</footer>
+<section class="cta" id="about">
+  <div>
+    <h2>Ready to explore the data?</h2>
+    <div class="muted">Open the dashboard to view the project's available analysis.</div>
+  </div>
+  <a class="btn primary" href="./dashboard.html">Go to Dashboard →</a>
+</section>
+```
 
-<script>
-const API = '';
-const state = { all: [], page: 1, pageSize: 15 };
-let typeChart, genreChart, yearChart;
+  </main>
 
-async function api(path) {
-  const response = await fetch(API + path);
-  if (!response.ok) throw new Error('API error: ' + response.status);
-  return response.json();
-}
-
-function esc(value) {
-  return String(value ?? '').replace(/[&<>"']/g, c => ({
-    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
-  }[c]));
-}
-
-function filtered() {
-  const type = document.getElementById('type').value;
-  const year = document.getElementById('year').value;
-  const search = document.getElementById('search').value.toLowerCase().trim();
-
-  return state.all.filter(x =>
-    (!type || x.type === type) &&
-    (!year || String(x.release_year) === year) &&
-    (!search || String(x.title || '').toLowerCase().includes(search))
-  );
-}
-
-function countCountries(items) {
-  const result = new Set();
-  items.forEach(x => String(x.country || '').split(',').forEach(c => {
-    if (c.trim()) result.add(c.trim());
-  }));
-  return result.size;
-}
-
-function drawChart(old, canvas, config) {
-  if (old) old.destroy();
-  return new Chart(document.getElementById(canvas), config);
-}
-
-function updateCharts(items) {
-  const typeCounts = { Movie: 0, 'TV Show': 0 };
-  const genres = {};
-  const years = {};
-
-  items.forEach(x => {
-    if (x.type in typeCounts) typeCounts[x.type]++;
-    String(x.listed_in || '').split(',').forEach(g => {
-      g = g.trim();
-      if (g) genres[g] = (genres[g] || 0) + 1;
-    });
-    if (x.release_year) {
-      const y = String(x.release_year);
-      years[y] = (years[y] || 0) + 1;
-    }
-  });
-
-  const common = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { labels: { color: '#eee' } } }
-  };
-
-  typeChart = drawChart(typeChart, 'typeChart', {
-    type: 'doughnut',
-    data: {
-      labels: Object.keys(typeCounts),
-      datasets: [{ data: Object.values(typeCounts),
-        backgroundColor: ['#e50914', '#777'] }]
-    },
-    options: common
-  });
-
-  const topGenres = Object.entries(genres).sort((a,b) => b[1]-a[1]).slice(0,10);
-  genreChart = drawChart(genreChart, 'genreChart', {
-    type: 'bar',
-    data: {
-      labels: topGenres.map(x => x[0]),
-      datasets: [{ label: 'Titles', data: topGenres.map(x => x[1]),
-        backgroundColor: '#e50914' }]
-    },
-    options: {
-      ...common, indexAxis: 'y',
-      scales: {
-        x: { ticks: { color: '#ddd' }, grid: { color: '#444' } },
-        y: { ticks: { color: '#ddd' }, grid: { color: '#333' } }
-      }
-    }
-  });
-
-  const yearEntries = Object.entries(years)
-    .sort((a,b) => Number(a[0])-Number(b[0])).slice(-25);
-  yearChart = drawChart(yearChart, 'yearChart', {
-    type: 'line',
-    data: {
-      labels: yearEntries.map(x => x[0]),
-      datasets: [{ label: 'Titles', data: yearEntries.map(x => x[1]),
-        borderColor: '#e50914', backgroundColor: '#e50914',
-        tension: 0.25 }]
-    },
-    options: {
-      ...common,
-      scales: {
-        x: { ticks: { color: '#ddd' }, grid: { color: '#444' } },
-        y: { ticks: { color: '#ddd' }, grid: { color: '#444' }, beginAtZero: true }
-      }
-    }
-  });
-}
-
-function render() {
-  const items = filtered();
-  document.getElementById('total').textContent = items.length.toLocaleString();
-  document.getElementById('movies').textContent = items.filter(x => x.type === 'Movie').length.toLocaleString();
-  document.getElementById('shows').textContent = items.filter(x => x.type === 'TV Show').length.toLocaleString();
-  document.getElementById('countries').textContent = countCountries(items).toLocaleString();
-
-  const maxPage = Math.max(1, Math.ceil(items.length / state.pageSize));
-  state.page = Math.min(state.page, maxPage);
-  const start = (state.page - 1) * state.pageSize;
-  const pageItems = items.slice(start, start + state.pageSize);
-
-  document.getElementById('rows').innerHTML = pageItems.map(x => `
-    <tr>
-      <td>${esc(x.title)}</td>
-      <td>${esc(x.type)}</td>
-      <td>${esc(x.release_year)}</td>
-      <td>${esc(x.rating)}</td>
-      <td>${esc(x.duration)}</td>
-      <td>${esc(x.country)}</td>
-    </tr>`).join('');
-
-  document.getElementById('tableInfo').textContent =
-    `Showing ${items.length ? start + 1 : 0}–${Math.min(start + state.pageSize, items.length)} of ${items.length} titles`;
-  document.getElementById('pageInfo').textContent = `Page ${state.page} of ${maxPage}`;
-  document.getElementById('prev').disabled = state.page <= 1;
-  document.getElementById('next').disabled = state.page >= maxPage;
-  updateCharts(items);
-}
-
-async function start() {
-  try {
-    document.getElementById('status').textContent = 'Loading Netflix dataset...';
-    const result = await api('/titles?limit=10000');
-    state.all = Array.isArray(result) ? result : (result.items || result.titles || []);
-
-    if (!state.all.length) throw new Error('No titles returned by /titles endpoint');
-
-    const years = [...new Set(state.all.map(x => x.release_year).filter(Boolean))]
-      .sort((a,b) => b-a);
-    document.getElementById('year').innerHTML =
-      '<option value="">All years</option>' +
-      years.map(y => `<option value="${esc(y)}">${esc(y)}</option>`).join('');
-
-    document.getElementById('status').textContent =
-      `Connected successfully · ${state.all.length.toLocaleString()} titles loaded`;
-    render();
-  } catch (err) {
-    document.getElementById('status').textContent =
-      'Could not load data: ' + err.message +
-      '. Ensure FastAPI is running and check the /titles endpoint.';
-  }
-}
-
-['type','year','search'].forEach(id =>
-  document.getElementById(id).addEventListener('input', () => {
-    state.page = 1;
-    render();
-  })
-);
-document.getElementById('reset').addEventListener('click', () => {
-  document.getElementById('type').value = '';
-  document.getElementById('year').value = '';
-  document.getElementById('search').value = '';
-  state.page = 1;
-  render();
-});
-document.getElementById('prev').addEventListener('click', () => {
-  state.page--;
-  render();
-});
-document.getElementById('next').addEventListener('click', () => {
-  state.page++;
-  render();
-});
-
-start();
-</script>
+  <footer>
+    Netflix App Analysis · Data Analytics Portfolio Project
+  </footer>
 </body>
 </html>
-```

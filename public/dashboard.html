@@ -1,0 +1,426 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Netflix Analytics Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #141414;
+      color: #fff;
+    }
+
+    header {
+      padding: 22px 5%;
+      background: #090909;
+      border-bottom: 2px solid #e50914;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    header h1 { margin: 0; color: #e50914; }
+    header p { color: #bbb; margin-bottom: 0; }
+
+    .home-btn {
+      display: inline-block;
+      padding: 11px 18px;
+      background: #e50914;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+
+    .home-btn:hover { background: #b80710; }
+
+    main {
+      max-width: 1250px;
+      margin: auto;
+      padding: 25px;
+    }
+
+    .filters, .cards, .charts {
+      display: grid;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .filters { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+    .cards { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+    .charts { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+
+    .panel, .card {
+      background: #222;
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid #333;
+    }
+
+    .card h3 { color: #bbb; font-size: 14px; margin-top: 0; }
+    .card strong { font-size: 30px; color: #e50914; }
+
+    select, input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #555;
+      background: #181818;
+      color: white;
+    }
+
+    label { display: block; margin-bottom: 8px; color: #ddd; }
+    h2 { font-size: 19px; }
+    .chart-wrap { height: 300px; position: relative; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 600px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #444; }
+    th { color: #e50914; }
+    tr:hover { background: #303030; }
+
+    button {
+      background: #e50914;
+      color: white;
+      border: 0;
+      padding: 12px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .status { color: #bbb; margin: 12px 0; }
+    footer { text-align: center; padding: 25px; color: #888; }
+    .table-actions { margin-top: 18px; display: flex; gap: 12px; align-items: center; }
+  </style>
+</head>
+
+<body>
+<header>
+  <div>
+    <h1>NETFLIX</h1>
+    <p>Movies &amp; TV Shows Analytics Dashboard</p>
+  </div>
+  <a class="home-btn" href="/">&#127968; Back to Home</a>
+</header>
+
+<main>
+  <section class="filters">
+    <div class="panel">
+      <label for="type">Content Type</label>
+      <select id="type">
+        <option value="">All</option>
+        <option value="Movie">Movies</option>
+        <option value="TV Show">TV Shows</option>
+      </select>
+    </div>
+
+    <div class="panel">
+      <label for="year">Release Year</label>
+      <select id="year"><option value="">All years</option></select>
+    </div>
+
+    <div class="panel">
+      <label for="search">Search title</label>
+      <input id="search" placeholder="Enter a title...">
+    </div>
+
+    <div class="panel">
+      <label>&nbsp;</label>
+      <button id="reset">Reset Filters</button>
+    </div>
+  </section>
+
+  <section class="cards">
+    <div class="card"><h3>Filtered Titles</h3><strong id="total">—</strong></div>
+    <div class="card"><h3>Movies</h3><strong id="movies">—</strong></div>
+    <div class="card"><h3>TV Shows</h3><strong id="shows">—</strong></div>
+    <div class="card"><h3>Countries</h3><strong id="countries">—</strong></div>
+  </section>
+
+  <p class="status" id="status">Connecting to API...</p>
+
+  <section class="charts">
+    <div class="panel">
+      <h2>Movies vs TV Shows</h2>
+      <div class="chart-wrap"><canvas id="typeChart"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <h2>Top Genres</h2>
+      <div class="chart-wrap"><canvas id="genreChart"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <h2>Titles by Release Year</h2>
+      <div class="chart-wrap"><canvas id="yearChart"></canvas></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Netflix Titles</h2>
+    <p id="tableInfo" class="status"></p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Type</th>
+            <th>Release Year</th>
+            <th>Rating</th>
+            <th>Duration</th>
+            <th>Country</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+    <div class="table-actions">
+      <button id="prev">Previous</button>
+      <span id="pageInfo">Page 1</span>
+      <button id="next">Next</button>
+    </div>
+  </section>
+</main>
+
+<footer>Netflix Titles Dataset · Analytics Dashboard</footer>
+
+<script>
+const API = '';
+const state = { all: [], page: 1, pageSize: 15 };
+let typeChart, genreChart, yearChart;
+
+async function api(path) {
+  const response = await fetch(API + path);
+  if (!response.ok) throw new Error('API error: ' + response.status);
+  return response.json();
+}
+
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[c]));
+}
+
+function filtered() {
+  const type = document.getElementById('type').value;
+  const year = document.getElementById('year').value;
+  const search = document.getElementById('search').value.toLowerCase().trim();
+
+  return state.all.filter(x =>
+    (!type || x.type === type) &&
+    (!year || String(x.release_year) === year) &&
+    (!search || String(x.title || '').toLowerCase().includes(search))
+  );
+}
+
+function countCountries(items) {
+  const result = new Set();
+  items.forEach(x =>
+    String(x.country || '').split(',').forEach(c => {
+      if (c.trim()) result.add(c.trim());
+    })
+  );
+  return result.size;
+}
+
+function drawChart(oldChart, canvas, config) {
+  if (oldChart) oldChart.destroy();
+  return new Chart(document.getElementById(canvas), config);
+}
+
+function updateCharts(items) {
+  const typeCounts = { Movie: 0, 'TV Show': 0 };
+  const genres = {};
+  const years = {};
+
+  items.forEach(x => {
+    if (x.type in typeCounts) typeCounts[x.type]++;
+
+    String(x.listed_in || '').split(',').forEach(g => {
+      g = g.trim();
+      if (g) genres[g] = (genres[g] || 0) + 1;
+    });
+
+    if (x.release_year) {
+      const y = String(x.release_year);
+      years[y] = (years[y] || 0) + 1;
+    }
+  });
+
+  const common = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: '#eee' } } }
+  };
+
+  typeChart = drawChart(typeChart, 'typeChart', {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(typeCounts),
+      datasets: [{
+        data: Object.values(typeCounts),
+        backgroundColor: ['#e50914', '#777']
+      }]
+    },
+    options: common
+  });
+
+  const topGenres = Object.entries(genres)
+    .sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+  genreChart = drawChart(genreChart, 'genreChart', {
+    type: 'bar',
+    data: {
+      labels: topGenres.map(x => x[0]),
+      datasets: [{
+        label: 'Titles',
+        data: topGenres.map(x => x[1]),
+        backgroundColor: '#e50914'
+      }]
+    },
+    options: {
+      ...common,
+      indexAxis: 'y',
+      scales: {
+        x: { ticks: { color: '#ddd' }, grid: { color: '#444' } },
+        y: { ticks: { color: '#ddd' }, grid: { color: '#333' } }
+      }
+    }
+  });
+
+  const yearEntries = Object.entries(years)
+    .sort((a, b) => Number(a[0]) - Number(b[0])).slice(-25);
+
+  yearChart = drawChart(yearChart, 'yearChart', {
+    type: 'line',
+    data: {
+      labels: yearEntries.map(x => x[0]),
+      datasets: [{
+        label: 'Titles',
+        data: yearEntries.map(x => x[1]),
+        borderColor: '#e50914',
+        backgroundColor: '#e50914',
+        tension: 0.25
+      }]
+    },
+    options: {
+      ...common,
+      scales: {
+        x: { ticks: { color: '#ddd' }, grid: { color: '#444' } },
+        y: { ticks: { color: '#ddd' }, grid: { color: '#444' }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+function render() {
+  const items = filtered();
+
+  document.getElementById('total').textContent = items.length.toLocaleString();
+  document.getElementById('movies').textContent =
+    items.filter(x => x.type === 'Movie').length.toLocaleString();
+  document.getElementById('shows').textContent =
+    items.filter(x => x.type === 'TV Show').length.toLocaleString();
+  document.getElementById('countries').textContent =
+    countCountries(items).toLocaleString();
+
+  const maxPage = Math.max(1, Math.ceil(items.length / state.pageSize));
+  state.page = Math.min(state.page, maxPage);
+
+  const start = (state.page - 1) * state.pageSize;
+  const pageItems = items.slice(start, start + state.pageSize);
+
+  document.getElementById('rows').innerHTML = pageItems.map(x => `
+    <tr>
+      <td>${esc(x.title)}</td>
+      <td>${esc(x.type)}</td>
+      <td>${esc(x.release_year)}</td>
+      <td>${esc(x.rating)}</td>
+      <td>${esc(x.duration)}</td>
+      <td>${esc(x.country)}</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('tableInfo').textContent =
+    `Showing ${items.length ? start + 1 : 0}–${Math.min(start + state.pageSize, items.length)} of ${items.length} titles`;
+
+  document.getElementById('pageInfo').textContent = `Page ${state.page} of ${maxPage}`;
+  document.getElementById('prev').disabled = state.page <= 1;
+  document.getElementById('next').disabled = state.page >= maxPage;
+
+  updateCharts(items);
+}
+
+async function start() {
+  try {
+    document.getElementById('status').textContent = 'Loading Netflix dataset...';
+
+    const result = await api('/titles?limit=10000');
+    state.all = Array.isArray(result) ? result : (result.items || result.titles || []);
+
+    if (!state.all.length) throw new Error('No titles returned by /titles endpoint');
+
+    const years = [...new Set(
+      state.all.map(x => x.release_year).filter(Boolean)
+    )].sort((a, b) => b - a);
+
+    document.getElementById('year').innerHTML =
+      '<option value="">All years</option>' +
+      years.map(y => `<option value="${esc(y)}">${esc(y)}</option>`).join('');
+
+    document.getElementById('status').textContent =
+      `Connected successfully · ${state.all.length.toLocaleString()} titles loaded`;
+
+    render();
+  } catch (err) {
+    document.getElementById('status').textContent =
+      'Could not load data: ' + err.message +
+      '. Ensure FastAPI is running and check the /titles endpoint.';
+  }
+}
+
+['type', 'year', 'search'].forEach(id =>
+  document.getElementById(id).addEventListener('input', () => {
+    state.page = 1;
+    render();
+  })
+);
+
+document.getElementById('reset').addEventListener('click', () => {
+  document.getElementById('type').value = '';
+  document.getElementById('year').value = '';
+  document.getElementById('search').value = '';
+  state.page = 1;
+  render();
+});
+
+document.getElementById('prev').addEventListener('click', () => {
+  state.page--;
+  render();
+});
+
+document.getElementById('next').addEventListener('click', () => {
+  state.page++;
+  render();
+});
+
+start();
+</script>
+</body>
+</html>
+
